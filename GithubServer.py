@@ -1,6 +1,7 @@
 from bottle import route, run, template,request,get, post
+import sqlite3
 
-@route('/getcommit')
+@route('/commit')
 def getcommit(): # 코딩 내역 들고오기
 
     print "commit"
