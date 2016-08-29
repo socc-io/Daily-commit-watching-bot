@@ -12,13 +12,13 @@
   -> 서버에서 슬랙 봇으로 내용전달
 
 # 유저구조
-- userid
 - username
 - github id
+- start commit time
 - last commit time
 - commit number
-- commit log (배열로 되야될듯 
-- commit group에 참가한 날짜 ex) 30일
+- commit log (배열로 되야될듯 - 이건 다른 디비에 추가를 해야될듯
+
 
 
 

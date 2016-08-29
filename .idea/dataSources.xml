@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="Sqlite (Xerial) - commit.sqlite" uuid="3af8bdc3-10c8-4b91-91f6-c3430ce861bf">
+    <data-source source="LOCAL" name="Sqlite (Xerial) - commiter.db" uuid="08e86f7c-466d-4259-9b98-6927257d98cb">
       <driver-ref>sqlite.xerial</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
-      <jdbc-url>jdbc:sqlite:commit.sqlite</jdbc-url>
+      <jdbc-url>jdbc:sqlite:$PROJECT_DIR$/commiter.db</jdbc-url>
     </data-source>
   </component>
 </project>
