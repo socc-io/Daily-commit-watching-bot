@@ -182,7 +182,7 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
 
                 print commiter_email
 
-                cursor.execute("SELECT rowid FROM USER WHERE GIT_USER_ID = ?", (commiter_email,))
+                cursor.execute("SELECT rowid,END_COMMIT_DAY FROM USER WHERE GIT_USER_ID = ?", (commiter_email,))
                 data = cursor.fetchone()
                 if data is None: # 데이터가 없는경우 -> 새로운 커미터 추가
                     now_time = datetime.date.today()
@@ -191,8 +191,12 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
                         (commiter_email, commiter_name, commit_num, now_time, now_time))
 
                 else: # 데이터가 있는 경우
-                    parse_date = event_list['created_at']
-                    print parse_date
+                    create_date = event_list['created_at']
+                    parse_date = create_date.split('T')[0]
+
+
+                    #if(parse_date < data[0].END_COMMIT_DAY):
+
                     print('Component %s found with rowid %s' % (commiter_email, data[0]))
 
     conn.commit();
@@ -230,5 +234,11 @@ def getcommit(): # 전체 커밋횟수를 불러오는 함수이다
 def get_user_commit(): # 특정한 한 유저의 커밋 내역을 불러오는 함수
     print "get user commit"
 
-register_commiter()
+#register_commiter()
+
+from datetime import datetime
+
+dt = datetime.now()
+print dt
+
 run(host='0.0.0.0', port=8887)
