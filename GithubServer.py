@@ -181,21 +181,13 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
     # reload_time date 처리
     cursor.execute("SELECT RELOAD_TIME FROM RELOAD WHERE rowid=1")
     reload_time_data = cursor.fetchone()
-    print reload_time_data[0]
+    time_data='';
     if (reload_time_data is None):
         cursor.execute("INSERT INTO RELOAD(RELOAD_TIME) VALUES (?)", (change_reload_time,))
+        time_data = '0';
     else:
         cursor.execute("UPDATE RELOAD SET RELOAD_TIME = (?) WHERE ROWID = 1", (change_reload_time,))
-
-    t1 = '2016-08-31'
-    t2 = '2016-08-31T15:32:42Z'
-
-    if(t1 > t2):
-        print 't1 bigger'
-    else:
-        print 't2 bigger'
-
-    print change_reload_time
+        time_data = reload_time_data[0]
 
     for event_list in data_list:
         type = event_list['type']
@@ -208,6 +200,7 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
 
         # -> 마지막 커밋 아이디를 저장해놓자 처음부터 끝까지 다 뒤져야한다
         # -> 깃허브 타임존을 저장한다면?
+        # -> 깃허브 시간끼리 비교가됨 ㅇㅇ
 
         if(type != 'PushEvent'):
             continue
@@ -217,7 +210,6 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
             for commit in commit_list:
                 commiter_email = commit['author']['email'].split('@')[0]
                 commiter_name  = commit['author']['name']
-                commit_message = commit['message']
 
                 cursor.execute("SELECT rowid,COMMIT_NUMBER,END_COMMIT_DAY FROM USER WHERE GIT_USER_ID = ?", (commiter_email,))
                 data = cursor.fetchone()
@@ -239,7 +231,7 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
                     # change_reload_time -> 새로운 커밋타임중에 가장 최신거
                     # create_date -> 받아온 새로운 커밋 타임
                     # new_commit_time -> 유저가 마지막으로 커밋한 시간
-                    if(create_date > reload_time_data[0]): # 최신 날짜로 업데이트 하는건 좋은데 문제는 애로 갱신하면 아래걸 못받아옴, 갱신하는건 현재시간 but
+                    if(create_date > time_data): # 최신 날짜로 업데이트 하는건 좋은데 문제는 애로 갱신하면 아래걸 못받아옴, 갱신하는건 현재시간 but
                         cursor.execute("UPDATE USER SET COMMIT_NUMBER = ?, END_COMMIT_DAY = ? WHERE ROWID = ?", (new_commit_num,new_commit_time,new_row_id))
                     else:
                         break;
