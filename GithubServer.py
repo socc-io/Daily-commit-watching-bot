@@ -176,17 +176,23 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
     r = requests.get(github_url)
     data_list =  r.json()
 
-    #cursor.execute("SELECT USER_HUB_ID FROM USER")
     change_reload_time = data_list[0]['created_at'] # 최신 시간 ( 현재시간보단 현재 올라와있는 커밋 시간중에 제일 최신 )
 
-    t1 = '2016-08-31T14:31:40Z'
+    # reload_time date 처리
+    cursor.execute("SELECT RELOAD_TIME FROM RELOAD WHERE ROWID=1")
+    reload_time_data = cursor.fetchone()
+    if (reload_time_data is None):
+        cursor.execute("INSERT INTO RELOAD(RELOAD_TIME) VALUES (?)", (change_reload_time,))
+    else:
+        cursor.execute("UPDATE RELOAD SET RELOAD_TIME = (?) WHERE ROWID = 1", (change_reload_time,))
+
+    t1 = '2016-08-31'
     t2 = '2016-08-31T15:32:42Z'
 
     if(t1 > t2):
         print 't1 bigger'
     else:
         print 't2 bigger'
-
 
     print change_reload_time
 
@@ -205,7 +211,6 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
         if(type != 'PushEvent'):
             continue
         else:
-            create_date
             commit_list = event_list['payload']['commits']
             commit_num = event_list['payload']['size']
             for commit in commit_list:
@@ -219,7 +224,7 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
                 data = cursor.fetchone()
                 if data is None: # 데이터가 없는경우 -> 새로운 커미터 추가
                     print 'this'
-                    now_time = create_date
+                    now_time = create_date # 이거 한면 안될거같은데 ... 새로 들어온애들은 받을수 있겠다.
                     cursor.execute(
                         "INSERT INTO USER(GIT_USER_ID, GIT_USER_NAME, COMMIT_NUMBER, START_COMMIT_DAY, END_COMMIT_DAY) VALUES (?,?,?,?,?)",
                         (commiter_email, commiter_name, commit_num, now_time, now_time))
@@ -229,12 +234,20 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
 
                     new_row_id = data[0]
                     new_commit_num = data[1] + commit_num
-                    new_commit_time = data[2]
+                    new_commit_time = data[2] # 마지막 커밋 타임 갱신
+                    # todo 매개변수에 데이터를 넣어보기
 
                     # create date 새로운 커밋이 기존 마지막 커밋 타임 보다 클경우
-                    if(create_date > new_commit_time): # 최신 날짜로 업데이트 하는건 좋은데 문제는 애로 갱신하면 아래걸 못받아옴, 갱신하는건 현재시간 but
+                    # change_reload_time -> 새로운 커밋타임중에 가장 최신거
+                    # create_date -> 받아온 새로운 커밋 타임
+                    # new_commit_time -> 유저가 마지막으로 커밋한 시간
+                    if(create_date > reload_time_data): # 최신 날짜로 업데이트 하는건 좋은데 문제는 애로 갱신하면 아래걸 못받아옴, 갱신하는건 현재시간 but
                         cursor.execute("UPDATE USER SET COMMIT_NUMBER = ? WHERE ROWID = ?", (new_commit_num,new_row_id))
                     else:
+
+                        continue
+
+                    # 반복문 다끝나면 user의 마지막 커밋 타임을 바까야함
 
                     #if(parse_date < data[0].END_COMMIT_DAY):
                     #print('Component %s found with rowid %s' % (commiter_email, data[0]))
@@ -242,13 +255,7 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
     # reload 타임의 생성이 필요하다.
 
 
-    # reload_time date 처리
-    cursor.execute("SELECT RELOAD_TIME FROM RELOAD")
-    reload_time_data = cursor.fetchone()
-    if(reload_time_data is None):
-        cursor.execute("INSERT INTO RELOAD(RELOAD_TIME) VALUES (?)", (change_reload_time))
-    else:
-        cursor.execute("UPDATE RELOAD SET RELOAD_TIME = ? WHERE ROWID = 1", (change_reload_time))
+
 
 
 
