@@ -1,12 +1,19 @@
 #-*- coding: utf-8 -*-
 
 from bottle import route, run, template,request,get, post
+from datetime import datetime
+
 import requests
 import sqlite3
-import datetime
+
+dt = datetime.now()
 
 # Group Event Url https://api.github.com/orgs/socc-io/events
-github_url = 'https://api.github.com/orgs/socc-io/events'
+# 이건 그룹용
+
+github_url = 'https://api.github.com/orgs/socc-io/events?per_page=100' # 그룹 url 을 등록해야됨
+
+# perpage 한페이지당 보여지는 이벤트 갯수
 
 ''' response json 구조
 [
@@ -159,45 +166,80 @@ github_url = 'https://api.github.com/orgs/socc-io/events'
     }
   },
 '''
+#todo 유저 디비에 커밋 시작한 일수를 추가해야
 
 @route('/register')
 def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할가 생각중입니다. 그룹에서 첫커밋시 등록
-    conn = sqlite3.connect("commiter.db") # 커미터 디비 연결
+    conn = sqlite3.connect("commiter.sqlite") # 커미터 디비 연결
     cursor = conn.cursor()
 
     r = requests.get(github_url)
     data_list =  r.json()
 
+    #cursor.execute("SELECT USER_HUB_ID FROM USER")
+    change_reload_time = data_list[0]['created_at']
+
+    t1 = '2016-08-31T14:31:40Z'
+    t2 = '2016-08-31T15:32:42Z'
+
+    if(t1 > t2):
+        print 't1 bigger'
+    else:
+        print 't2 bigger'
+
+
+    print change_reload_time
+
     for event_list in data_list:
         type = event_list['type']
+        create_date = event_list['created_at']
+
+        # 타임을 비교하는 함수 만들어야 된다. 유저가 마지막으로 커밋한 시간뒤에 있는것과 비교를 해야한다
+        # 타임을 비교하기는 애매하다 깃협는 상대시간을 기준으로 제공
+        # 2016-08-29 T06:21:37Z" - github 시간
+        # 2016-08-30 14:52:37.778581 - python datetime 시간
+
+        # -> 마지막 커밋 아이디를 저장해놓자 처음부터 끝까지 다 뒤져야한다
+        # -> 깃허브 타임존을 저장한다면?
 
         if(type != 'PushEvent'):
             continue
         else:
+            create_date
             commit_list = event_list['payload']['commits']
             commit_num = event_list['payload']['size']
             for commit in commit_list:
-                commiter_email = commit['author']['email']
+                commiter_email = commit['author']['email'].split('@')[0]
                 commiter_name  = commit['author']['name']
+                commit_message = commit['message']
 
-                print commiter_email
+                #print commiter_email
 
-                cursor.execute("SELECT rowid,END_COMMIT_DAY FROM USER WHERE GIT_USER_ID = ?", (commiter_email,))
+                cursor.execute("SELECT rowid,COMMIT_NUMBER,END_COMMIT_DAY FROM USER WHERE GIT_USER_ID = ?", (commiter_email,))
                 data = cursor.fetchone()
                 if data is None: # 데이터가 없는경우 -> 새로운 커미터 추가
-                    now_time = datetime.date.today()
+                    print 'this'
+                    now_time = create_date
                     cursor.execute(
-                        "INSERT INTO USER(GIT_USER_ID, USER_NAME, COMMIT_NUMBER, START_COMMIT_DAY, END_COMMIT_DAY) VALUES (?,?,?,?,?)",
+                        "INSERT INTO USER(GIT_USER_ID, GIT_USER_NAME, COMMIT_NUMBER, START_COMMIT_DAY, END_COMMIT_DAY) VALUES (?,?,?,?,?)",
                         (commiter_email, commiter_name, commit_num, now_time, now_time))
 
-                else: # 데이터가 있는 경우
-                    create_date = event_list['created_at']
-                    parse_date = create_date.split('T')[0]
+                    #todo 매개변수 고쳐야 한다.
+                else: # 커미터 데이터가 있는 경우
 
+                    new_row_id = data[0]
+                    new_commit_num = data[1] + commit_num
+                    new_commit_time = data[2]
+
+                    # create date 커밋한
+                    if(create_date > new_commit_time): # 최신 날짜로 업데이트 하는건 좋은데 문제는 애로 갱신하면 아래걸 못받아옴, 갱신하는건 현재시간 but
+                        cursor.execute("UPDATE USER SET COMMIT_NUMBER = ? WHERE ROWID = ?", (new_commit_num,new_row_id))
 
                     #if(parse_date < data[0].END_COMMIT_DAY):
+                    #print('Component %s found with rowid %s' % (commiter_email, data[0]))
 
-                    print('Component %s found with rowid %s' % (commiter_email, data[0]))
+    # reload 타임의 생성이 필요하다.
+
 
     conn.commit();
 
@@ -234,11 +276,8 @@ def getcommit(): # 전체 커밋횟수를 불러오는 함수이다
 def get_user_commit(): # 특정한 한 유저의 커밋 내역을 불러오는 함수
     print "get user commit"
 
-#register_commiter()
+register_commiter()
 
-from datetime import datetime
 
-dt = datetime.now()
-print dt
 
-run(host='0.0.0.0', port=8887)
+#run(host='0.0.0.0', port=8887)
