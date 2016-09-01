@@ -179,8 +179,9 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
     change_reload_time = data_list[0]['created_at'] # 최신 시간 ( 현재시간보단 현재 올라와있는 커밋 시간중에 제일 최신 )
 
     # reload_time date 처리
-    cursor.execute("SELECT RELOAD_TIME FROM RELOAD WHERE ROWID=1")
+    cursor.execute("SELECT RELOAD_TIME FROM RELOAD WHERE rowid=1")
     reload_time_data = cursor.fetchone()
+    print reload_time_data[0]
     if (reload_time_data is None):
         cursor.execute("INSERT INTO RELOAD(RELOAD_TIME) VALUES (?)", (change_reload_time,))
     else:
@@ -218,8 +219,6 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
                 commiter_name  = commit['author']['name']
                 commit_message = commit['message']
 
-                #print commiter_email
-
                 cursor.execute("SELECT rowid,COMMIT_NUMBER,END_COMMIT_DAY FROM USER WHERE GIT_USER_ID = ?", (commiter_email,))
                 data = cursor.fetchone()
                 if data is None: # 데이터가 없는경우 -> 새로운 커미터 추가
@@ -231,7 +230,6 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
 
                     #todo 매개변수 고쳐야 한다.
                 else: # 커미터 데이터가 있는 경우
-
                     new_row_id = data[0]
                     new_commit_num = data[1] + commit_num
                     new_commit_time = data[2] # 마지막 커밋 타임 갱신
@@ -241,24 +239,12 @@ def register_commiter(): # 새로운 커미터 갱신 - 하루에 한번씩 할�
                     # change_reload_time -> 새로운 커밋타임중에 가장 최신거
                     # create_date -> 받아온 새로운 커밋 타임
                     # new_commit_time -> 유저가 마지막으로 커밋한 시간
-                    if(create_date > reload_time_data): # 최신 날짜로 업데이트 하는건 좋은데 문제는 애로 갱신하면 아래걸 못받아옴, 갱신하는건 현재시간 but
-                        cursor.execute("UPDATE USER SET COMMIT_NUMBER = ? WHERE ROWID = ?", (new_commit_num,new_row_id))
+                    if(create_date > reload_time_data[0]): # 최신 날짜로 업데이트 하는건 좋은데 문제는 애로 갱신하면 아래걸 못받아옴, 갱신하는건 현재시간 but
+                        cursor.execute("UPDATE USER SET COMMIT_NUMBER = ?, END_COMMIT_DAY = ? WHERE ROWID = ?", (new_commit_num,new_commit_time,new_row_id))
                     else:
-
-                        continue
-
-                    # 반복문 다끝나면 user의 마지막 커밋 타임을 바까야함
-
-                    #if(parse_date < data[0].END_COMMIT_DAY):
-                    #print('Component %s found with rowid %s' % (commiter_email, data[0]))
+                        break;
 
     # reload 타임의 생성이 필요하다.
-
-
-
-
-
-
     conn.commit();
 
     '''
@@ -295,7 +281,5 @@ def get_user_commit(): # 특정한 한 유저의 커밋 내역을 불러오는 �
     print "get user commit"
 
 register_commiter()
-
-
 
 #run(host='0.0.0.0', port=8887)
